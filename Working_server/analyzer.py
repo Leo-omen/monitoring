@@ -65,15 +65,15 @@ def get_last_campaign_for_account(phone):
     """Находит последнюю кампанию для аккаунта по max scan_date."""
     conn = sqlite3.connect(LOCAL_DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT campaign_name, scan_date FROM local_campaigns")
+    cursor.execute("SELECT campaign_name, scan_date, associated_accounts FROM local_campaigns")
     rows = cursor.fetchall()
     conn.close()
     
     last_campaign = None
     max_date = None
     for row in rows:
-        campaign_name, scan_date = row
-        accounts = json.loads(row[2])
+        campaign_name, scan_date, associated_accounts = row
+        accounts = json.loads(associated_accounts)
         if phone in accounts:
             date_obj = datetime.strptime(scan_date, "%Y-%m-%d")
             if max_date is None or date_obj > max_date:
