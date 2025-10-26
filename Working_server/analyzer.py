@@ -18,6 +18,18 @@ DEAD_PERMANENT_FOLDER = 'accounts/Мертвые'  # Для режима 4
 last_campaign_name = None
 
 # ===============================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ПУТЕЙ
+# ===============================================================
+def is_path_inside_folder(path, folder):
+    """Возвращает True, если path находится внутри folder (учитывает разные разделители путей)."""
+    try:
+        path_abs = os.path.abspath(path)
+        folder_abs = os.path.abspath(folder)
+        return os.path.commonpath([path_abs, folder_abs]) == folder_abs
+    except ValueError:
+        return False
+
+# ===============================================================
 # ЛОКАЛЬНАЯ БАЗА ДАННЫХ
 # ===============================================================
 def init_local_db():
@@ -163,7 +175,7 @@ def find_and_scan_accounts(campaign_name, snapshot_type):
             for file in files:
                 if file.endswith('.json'):
                     filepath = os.path.join(root, file)
-                    is_dead = DEAD_AFTER_CAMPAIGN_FOLDER in root
+                    is_dead = is_path_inside_folder(filepath, DEAD_AFTER_CAMPAIGN_FOLDER)
                     acc_data = read_account_file(filepath, is_dead=is_dead)
                     if acc_data and acc_data['phone'] not in seen:
                         seen.add(acc_data['phone'])
@@ -268,7 +280,7 @@ def update_all_accounts():
     all_accounts_data = []
     dead_accounts = []
     for filepath in unique_files:
-        is_dead = DEAD_PERMANENT_FOLDER in filepath
+        is_dead = is_path_inside_folder(filepath, DEAD_PERMANENT_FOLDER)
         account_data = read_account_file(filepath, is_dead=is_dead)
         if account_data:
             all_accounts_data.append(account_data)
