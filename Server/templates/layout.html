@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Панель управления</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: #f8f9fa; color: #343a40; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        nav { background-color: #343a40; padding: 15px 30px; }
+        nav a { color: #ffffff; text-decoration: none; font-weight: 500; margin-right: 20px; }
+        nav a:hover { color: #cccccc; }
+        h1, h2, h3 { color: #495057; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; }
+        th, td { padding: 12px; border: 1px solid #dee2e6; text-align: left; }
+        th { background-color: #e9ecef; }
+        .btn { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { background-color: #0056b3; }
+        form { margin-top: 20px; background: #fff; padding: 20px; border-radius: 5px; }
+        input, select { width: 100%; padding: 8px; margin: 5px 0 15px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type=submit] { width: auto; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Главная</a>
+        <a href="/campaigns">Управление кампаниями</a>
+        <a href="/report/campaign">Отчет по кампании</a>
+        <a href="/report/period">Отчет за период</a>
+		<a href="/report/client">Отчёт по клиентам</a>
+        <a href="/report/warmup">Анализ прогрева</a>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    {% block scripts %}{% endblock %} </body>
+</html>

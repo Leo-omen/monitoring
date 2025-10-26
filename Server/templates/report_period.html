@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h1>Отчет за период</h1>
+    
+    <div>
+        <a href="/report/period?period=today" class="btn">Сегодня</a>
+        <a href="/report/period?period=yesterday" class="btn">Вчера</a>
+        <a href="/report/period?period=week" class="btn">Последние 7 дней</a>
+        <a href="/report/period?period=month" class="btn">Последние 30 дней</a>
+    </div>
+
+    <form method="get" action="/report/period">
+        <h3>Выбрать конкретный период</h3>
+        <label for="start_date">Начальная дата:</label>
+        <input type="date" id="start_date" name="start_date" value="{{ start_date_str }}">
+        
+        <label for="end_date">Конечная дата:</label>
+        <input type="date" id="end_date" name="end_date" value="{{ end_date_str }}">
+        
+        <input type="submit" value="Показать" class="btn">
+    </form>
+
+    {% if period_summary %}
+        <h2>Сводная статистика за период: {{ start_date_str }} - {{ end_date_str }}</h2>
+        
+        <table>
+            <tr><th>Всего кампаний за период</th><td>{{ period_summary.total_campaigns }}</td></tr>
+            <tr><th>Всего задействовано уникальных аккаунтов</th><td>{{ period_summary.total_unique_accounts }}</td></tr>
+            <tr style="background-color: #f2f2f2;"><td colspan="2"></td></tr>
+            <tr><th>Общий доход за период</th><td>{{ "%.2f"|format(period_summary.total_revenue) }}</td></tr>
+            <tr><th>Всего сообщений / инвайтов</th><td>{{ period_summary.total_messages }} / {{ period_summary.total_invites }}</td></tr>
+            <tr><th>Средний доход на 1 уникальный аккаунт</th><td>{{ "%.2f"|format(period_summary.avg_revenue_per_account) }}</td></tr>
+            <tr><th>Среднее кол-во сообщений на аккаунт</th><td>{{ "%.2f"|format(period_summary.avg_messages_all_accounts) }}</td></tr>
+            <tr style="background-color: #f2f2f2;"><td colspan="2"></td></tr>
+            <tr><th>Аккаунты получили ограничения (уникальные)</th><td>{{ period_summary.total_restricted_accounts }}</td></tr>
+            <tr><th>Процент ограниченных аккаунтов</th><td>{{ "%.2f"|format(period_summary.percentage_restricted) }} %</td></tr>
+            <tr><th>Средний доход с ограниченного аккаунта</th><td>{{ "%.2f"|format(period_summary.avg_revenue_per_restricted_account) }}</td></tr>
+            <tr><th>Среднее кол-во сообщений на ограниченный аккаунт</th><td>{{ "%.2f"|format(period_summary.avg_messages_restricted_accounts) }}</td></tr>
+        </table>
+        <h3>Кампании в этом периоде</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Название</th>
+                    <th>Доход</th>
+                    <th>Сообщения</th>
+                    <th>Инвайты</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for campaign in campaigns_in_period %}
+                <tr>
+                    <td>{{ campaign.date }}</td>
+                    <td><a href="/report/campaign?campaign_name={{ campaign.name }}">{{ campaign.name }}</a></td>
+                    <td>{{ "%.2f"|format(campaign.summary.total_revenue) }}</td>
+                    <td>{{ campaign.summary.total_messages }}</td>
+                    <td>{{ campaign.summary.total_invites }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% elif request.args.get('period') or request.args.get('start_date') %}
+         <p>В выбранный период не найдено ни одной кампании.</p>
+    {% endif %}
+
+{% endblock %}

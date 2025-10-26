@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h1>Отчеты по кампаниям</h1>
+    
+    <form method="get" action="/report/campaign" id="report_form">
+        
+        <label for="client_code">1. Выберите клиента:</label>
+        <select name="client_code" id="client_code" onchange="this.form.submit()">
+            <option value="">-- Все клиенты --</option>
+            {% for client in clients %}
+                <option value="{{ client }}" {% if client == selected_client %}selected{% endif %}>
+                    {{ client }}
+                </option>
+            {% endfor %}
+        </select>
+        
+        {% if selected_client %}
+            <label for="campaign_name">2. Выберите кампанию:</label>
+            <select name="campaign_name" id="campaign_name" onchange="this.form.submit()">
+                <option value="">-- Все кампании клиента {{ selected_client }} --</option>
+                {% for campaign_name in campaigns_for_client %}
+                    <option value="{{ campaign_name }}" {% if campaign_name == selected_campaign_name %}selected{% endif %}>
+                        {{ campaign_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% endif %}
+    </form>
+    {% if report_data %}
+        <h2>Статистика по кампании: {{ selected_campaign_name }}</h2>
+        
+        <table>
+            <tr><th>Общий доход</th><td>{{ "%.2f"|format(report_data.summary.total_revenue) }}</td></tr>
+            <tr><th>Отправлено сообщений</th><td>{{ report_data.summary.total_messages }}</td></tr>
+            <tr><th>Сделано инвайтов</th><td>{{ report_data.summary.total_invites }}</td></tr>
+            <tr><th>Аккаунтов с ограничениями</th><td>{{ report_data.summary.accounts_restricted }} из {{ report_data.results|length }}</td></tr>
+            <tr><th>Процент ограниченных аккаунтов</th><td>{{ "%.2f"|format(report_data.summary.percentage_restricted) }} %</td></tr>
+            <tr style="background-color: #f2f2f2;"><td colspan="2"></td></tr>
+            <tr><th>Среднее кол-во сообщений на аккаунт</th><td>{{ "%.2f"|format(report_data.summary.avg_msg_all) }}</td></tr>
+            <tr><th>Средний доход на аккаунт</th><td>{{ "%.2f"|format(report_data.summary.avg_revenue_per_account) }}</td></tr>
+        </table>
+
+        <h3>Детализация по ограниченным аккаунтам</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Тип ограничения</th>
+                    <th>Кол-во аккаунтов</th>
+                    <th>Среднее кол-во сообщений</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Замороженные (Frozen)</td>
+                    <td>{{ report_data.summary.frozen_count }}</td>
+                    <td>{{ "%.2f"|format(report_data.summary.avg_msg_frozen) }}</td>
+                </tr>
+                <tr>
+                    <td>Временный спамблок (Temporary Spamblock)</td>
+                    <td>{{ report_data.summary.temp_spam_count }}</td>
+                    <td>{{ "%.2f"|format(report_data.summary.avg_msg_temp_spam) }}</td>
+                </tr>
+                
+                <tr style="color: green; background-color: #f0fff0;">
+                    <td>Временный спамблок (Снят)</td>
+                    <td>{{ report_data.summary.temp_spam_resolved_count }}</td>
+                    <td>{{ "%.2f"|format(report_data.summary.avg_msg_temp_spam_resolved) }}</td>
+                </tr>
+                <tr>
+                    <td>Вечный спамблок (Permanent Spamblock / Banned)</td>
+                    <td>{{ report_data.summary.perm_spam_count }}</td>
+                    <td>{{ "%.2f"|format(report_data.summary.avg_msg_perm_spam) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Детальная статистика по аккаунтам</h3>
+        <table id="details-table">
+            <thead>
+                <tr>
+                    <th>Аккаунт</th>
+                    <th>Статус ДО</th>
+                    <th>Статус ПОСЛЕ</th>
+                    <th>Сообщений</th>
+                    <th>Инвайтов</th>
+                    <th>Доход</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for res in report_data.results %}
+                <tr>
+                    <td>{{ res.phone }}</td>
+                    <td>{{ res.status_before }}</td>
+                    <td>{{ res.status_after }}</td>
+                    <td>{{ res.msg_sent }}</td>
+                    <td>{{ res.inv_sent }}</td>
+                    <td>{{ "%.2f"|format(res.revenue) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif selected_campaign_name %}
+        <p>Для кампании '{{ selected_campaign_name }}' еще нет данных "ПОСЛЕ" для генерации отчета.</p>
+    {% elif selected_client %}
+        <p>Выберите кампанию из списка, чтобы увидеть отчет.</p>
+    {% else %}
+        <p>Выберите клиента, чтобы загрузить список его кампаний.</p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#details-table').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json"
+        }
+    });
+});
+</script>
+{% endblock %}

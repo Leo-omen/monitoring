@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+{% block content %}
+
+  <h1>Отчёт по клиенту</h1>
+
+  <form method="get" action="/report/client">
+    <div>
+      <label for="client_code">Код клиента (префикс):</label>
+      <input id="client_code" name="client_code" type="text" placeholder="например, MR" value="{{ client_code or '' }}" required>
+    </div>
+    <div>
+      <label for="start_date">Начало периода:</label>
+      <input id="start_date" name="start_date" type="date" value="{{ start_date_str or '' }}">
+    </div>
+    <div>
+      <label for="end_date">Конец периода:</label>
+      <input id="end_date" name="end_date" type="date" value="{{ end_date_str or '' }}">
+    </div>
+    <div>
+      <label for="preset">Пресет периода:</label>
+      <select id="preset" name="period">
+        <option value="">— не использовать —</option>
+        <option value="today">Сегодня</option>
+        <option value="yesterday">Вчера</option>
+        <option value="week">Последние 7 дней</option>
+        <option value="month">Последние 30 дней</option>
+      </select>
+    </div>
+    <div></div>
+    <div><button type="submit" class="btn">Построить отчёт</button></div> </form>
+
+  {% if client_summary %}
+    <h2 class="muted">Клиент: <strong>{{ client_summary.client_code }}</strong></h2>
+
+    <div class="cards">
+      <div class="card">
+        <div class="title">Кампаний</div>
+        <div class="value">{{ client_summary.total_campaigns }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Уникальных аккаунтов</div>
+        <div class="value">{{ client_summary.total_unique_accounts }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Сообщений (Δ)</div>
+        <div class="value">{{ client_summary.total_messages }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Инвайтов (Δ)</div>
+        <div class="value">{{ client_summary.total_invites }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Выручка суммарно</div>
+        <div class="value">{{ "%.2f"|format(client_summary.total_revenue) }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Средн. выручка / аккаунт</div>
+        <div class="value">{{ "%.2f"|format(client_summary.avg_revenue_per_account) }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Ограниченные аккаунты</div>
+        <div class="value">{{ client_summary.total_restricted_accounts }} ({{ client_summary.percentage_restricted }}%)</div>
+      </div>
+      <div class="card">
+        <div class="title">Avg msg / аккаунт</div>
+        <div class="value">{{ client_summary.avg_messages_all_accounts }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Avg msg / ограниченный</div>
+        <div class="value">{{ client_summary.avg_messages_restricted_accounts }}</div>
+      </div>
+      <div class="card">
+        <div class="title">Avg выручка / ограниченный</div>
+        <div class="value">{{ "%.2f"|format(client_summary.avg_revenue_per_restricted_account) }}</div>
+      </div>
+    </div>
+
+    <h2>Кампании клиента</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Кампания</th>
+          <th class="nowrap">Дата</th>
+          <th class="right">Сообщения (Δ)</th>
+          <th class="right">Инвайты (Δ)</th>
+          <th class="right">Выручка</th>
+          <th class="right">Аккаунтов в отчёте</th>
+          <th class="right">% ограничений</th>
+          <th class="right">Avg msg / acc</th>
+          <th class="right">Avg rev / acc</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in client_campaigns %}
+          <tr>
+            <td><a href="/report/campaign?campaign_name={{ c.name }}">{{ c.name }}</a></td>
+            <td class="nowrap">{{ c.date }}</td>
+            <td class="right">{{ c.total_messages }}</td>
+            <td class="right">{{ c.total_invites }}</td>
+            <td class="right">{{ "%.2f"|format(c.total_revenue) }}</td>
+            <td class="right">{{ c.accounts_in_report }}</td>
+            <td class="right">{{ c.percentage_restricted }}%</td>
+            <td class="right">{{ c.avg_msg_all }}</td>
+            <td class="right">{{ c.avg_revenue_per_account }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="footer-note">
+      * Период можно задать пресетом или ручными датами. Явные даты перекрывают пресет.
+    </div>
+  {% elif client_code %}
+    <p class="muted">Для кода клиента <strong>{{ client_code }}</strong> по выбранным фильтрам данных не найдено.</p>
+  {% else %}
+    <p class="muted">Укажите код клиента (например, <strong>MR</strong>) и период, затем нажмите «Построить отчёт».</p>
+  {% endif %}
+
+{% endblock %}

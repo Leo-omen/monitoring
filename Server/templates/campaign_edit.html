@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h1>Редактировать кампанию: {{ campaign.name }}</h1>
+    
+    <form method="post">
+        <label for="name">Имя кампании</label>
+        <input type="text" id="name" name="name" value="{{ campaign.name }}" required>
+        
+        <label for="cost_per_message">Стоимость сообщения</label>
+        <input type="number" step="0.01" id="cost_per_message" name="cost_per_message" value="{{ campaign.cost_per_message }}" required>
+        
+        <label for="cost_per_invite">Стоимость инвайта</label>
+        <input type="number" step="0.01" id="cost_per_invite" name="cost_per_invite" value="{{ campaign.cost_per_invite }}" required>
+        
+        <label for="message_type">Тип сообщения</label>
+        <select id="message_type" name="message_type">
+            <option value="text_button" {% if campaign.message_type == 'text_button' %}selected{% endif %}>текст+кнопка</option>
+            <option value="image_text_button" {% if campaign.message_type == 'image_text_button' %}selected{% endif %}>картинка+текст+кнопка</option>
+            <option value="image_button" {% if campaign.message_type == 'image_button' %}selected{% endif %}>картинка+кнопка</option>
+            <option value="video_text_button" {% if campaign.message_type == 'video_text_button' %}selected{% endif %}>видео+текст+кнопка</option>
+            <option value="video_button" {% if campaign.message_type == 'video_button' %}selected{% endif %}>видео+кнопка</option>
+            <option value="audio_text_button" {% if campaign.message_type == 'audio_text_button' %}selected{% endif %}>аудио+текст+кнопка</option>
+            <option value="audio_button" {% if campaign.message_type == 'audio_button' %}selected{% endif %}>аудио+кнопка</option>
+            <option value="image" {% if campaign.message_type == 'image' %}selected{% endif %}>картинка</option>
+        </select>
+        
+        <label for="base_type">База</label>
+        <select id="base_type" name="base_type">
+            <option value="usernames" {% if campaign.base_type == 'usernames' %}selected{% endif %}>юзернеймы</option>
+            <option value="phones" {% if campaign.base_type == 'phones' %}selected{% endif %}>телефоны</option>
+            <option value="usernames_phones" {% if campaign.base_type == 'usernames_phones' %}selected{% endif %}>юзернеймы+телефоны</option>
+        </select>
+        
+        <label for="link_type">Тип ссылки</label>
+        <select id="link_type" name="link_type">
+            <option value="direct_pm" {% if campaign.link_type == 'direct_pm' %}selected{% endif %}>прямая личка</option>
+            <option value="direct_external" {% if campaign.link_type == 'direct_external' %}selected{% endif %}>прямая внешняя</option>
+            <option value="direct_bot" {% if campaign.link_type == 'direct_bot' %}selected{% endif %}>прямая бот</option>
+            <option value="redirect" {% if campaign.link_type == 'redirect' %}selected{% endif %}>редирект</option>
+        </select>
+        
+        <label for="offer">Оффер (введите или выберите)</label>
+        <input list="offer_list" id="offer" name="offer" value="{{ campaign.offer }}">
+        <datalist id="offer_list">
+            {% for offer in existing_offers %}
+            <option value="{{ offer }}">
+            {% endfor %}
+        </datalist>
+
+        <input type="submit" value="Сохранить изменения" class="btn">
+        <a href="{{ url_for('manage_campaigns') }}" class="btn" style="background-color: #6c757d;">Отмена</a>
+    </form>
+{% endblock %}
