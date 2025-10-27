@@ -341,7 +341,6 @@ def scan_after_immediate():
         if response.status_code == 200:
             print(f"✅ Успех! Снимок 'ПОСЛЕ' для '{campaign_name}' отправлен.")
             last_campaign_name = campaign_name
-            save_campaign_locally(campaign_name, accounts_list)
         else:
             try:
                 err = response.json().get('error', 'Неизвестная ошибка')
