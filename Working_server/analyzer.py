@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import requests
 import sqlite3
 from datetime import datetime, timezone
@@ -192,14 +193,131 @@ def find_and_scan_accounts(campaign_name, snapshot_type):
     return accounts_details
 
 def link_accounts_to_campaign():
-    # ... (без изменений)
-    pass  # Опущено для краткости
+    """Создает кампанию, отправляет снимок 'ДО' и сохраняет аккаунты локально."""
+    global last_campaign_name
+
+    print("\n--- Связывание аккаунтов с рассылкой (Снимок 'ДО') ---")
+    campaign_name = input("Введите название рассылки: ").strip()
+    if not campaign_name:
+        print("❌ Ошибка: название рассылки не может быть пустым.")
+        return
+
+    default_folder = os.path.join('clients', campaign_name) if os.path.isdir(os.path.join('clients', campaign_name)) else 'accounts'
+    source_folder = input(f"Укажите папку с JSON аккаунтами (Enter для '{default_folder}'): ").strip() or default_folder
+
+    if not os.path.isdir(source_folder):
+        print(f"❌ Ошибка: папка '{source_folder}' не найдена.")
+        return
+
+    print(f"Чтение аккаунтов из '{source_folder}'...")
+    accounts_map = {}
+    for root, _, files in os.walk(source_folder):
+        for file in files:
+            if file.endswith('.json'):
+                filepath = os.path.join(root, file)
+                acc_data = read_account_file(filepath, is_dead=False)
+                if acc_data:
+                    accounts_map[acc_data['phone']] = (acc_data, filepath)
+
+    if not accounts_map:
+        print("❌ Не найдено ни одного JSON-файла аккаунта в указанной папке.")
+        return
+
+    accounts_list = [acc for acc, _ in accounts_map.values()]
+    print(f"Найдено {len(accounts_list)} аккаунтов для отправки снимка 'ДО'.")
+
+    def prompt_float(prompt_text):
+        while True:
+            raw = input(prompt_text).strip()
+            if not raw:
+                print("   Значение обязательно. Повторите ввод.")
+                continue
+            raw = raw.replace(',', '.')
+            try:
+                return float(raw)
+            except ValueError:
+                print("   Некорректное число. Используйте точку или запятую в качестве разделителя.")
+
+    cost_per_message = prompt_float("Введите стоимость за сообщение: ")
+    cost_per_invite = prompt_float("Введите стоимость за инвайт: ")
+    message_type = input("Тип сообщения (опционально): ").strip() or None
+    base_type = input("Тип базы (опционально): ").strip() or None
+    link_type = input("Тип ссылки (опционально): ").strip() or None
+    offer = input("Оффер (опционально): ").strip() or None
+
+    campaign_payload = {
+        "campaign_name": campaign_name,
+        "cost_per_message": cost_per_message,
+        "cost_per_invite": cost_per_invite,
+        "message_type": message_type,
+        "base_type": base_type,
+        "link_type": link_type,
+        "offer": offer
+    }
+
+    print("Создание кампании на сервере...")
+    try:
+        response = requests.post(f"{SERVER_URL}/api/campaigns", headers=HEADERS, json=campaign_payload, timeout=30)
+    except requests.exceptions.RequestException as exc:
+        print(f"❌ Ошибка сети при создании кампании: {exc}")
+        return
+
+    if response.status_code == 200:
+        print("✅ Кампания успешно создана.")
+    elif response.status_code == 409:
+        print("ℹ️ Кампания с таким именем уже существует. Используем существующую запись.")
+    else:
+        try:
+            error_msg = response.json().get('error', response.text)
+        except Exception:
+            error_msg = response.text
+        print(f"❌ Ошибка сервера при создании кампании ({response.status_code}): {error_msg}")
+        return
+
+    print("Отправка снимка 'ДО'...")
+    snapshot_payload = {
+        "campaign_name": campaign_name,
+        "snapshot_type": "before",
+        "accountsList": accounts_list
+    }
+
+    try:
+        snapshot_response = requests.post(f"{SERVER_URL}/api/snapshot", headers=HEADERS, json=snapshot_payload, timeout=30)
+    except requests.exceptions.RequestException as exc:
+        print(f"❌ Ошибка сети при отправке снимка 'ДО': {exc}")
+        return
+
+    if snapshot_response.status_code != 200:
+        try:
+            error_msg = snapshot_response.json().get('error', snapshot_response.text)
+        except Exception:
+            error_msg = snapshot_response.text
+        print(f"❌ Ошибка сервера при добавлении снимка 'ДО' ({snapshot_response.status_code}): {error_msg}")
+        return
+
+    print("✅ Снимок 'ДО' успешно отправлен на сервер.")
+    save_campaign_locally(campaign_name, accounts_list)
+    last_campaign_name = campaign_name
+
+    target_folder = os.path.join('clients', campaign_name)
+    os.makedirs(target_folder, exist_ok=True)
+    for phone, (_, src_path) in accounts_map.items():
+        try:
+            shutil.copy2(src_path, os.path.join(target_folder, f"{phone}.json"))
+        except OSError as exc:
+            print(f"⚠️ Не удалось скопировать файл для {phone}: {exc}")
+
+    print(f"ℹ️ {len(accounts_list)} аккаунтов сохранены локально для кампании '{campaign_name}'.")
 
 def scan_after_immediate():
     """2. Снимок 'Сразу ПОСЛЕ'"""
+    global last_campaign_name
+
     print("\n--- Создание снимка 'Сразу ПОСЛЕ' ---")
-    campaign_name = input("Введите имя рассылки для сканирования (или Enter для последней): ") or last_campaign_name
-    if not campaign_name: return
+    campaign_name = input("Введите имя рассылки для сканирования (или Enter для последней): ").strip() or last_campaign_name
+    if not campaign_name:
+        print("❌ Ошибка: имя рассылки не указано и нет предыдущей записи.")
+        return
 
     accounts_list = find_and_scan_accounts(campaign_name, "after_immediate")
     if not accounts_list:
@@ -235,9 +353,13 @@ def scan_after_immediate():
 
 def scan_after_next_day():
     """3. Снимок 'На следующий день ПОСЛЕ'"""
+    global last_campaign_name
+
     print("\n--- Создание снимка 'На следующий день ПОСЛЕ' ---")
-    campaign_name = input("Введите имя вчерашней рассылки для сканирования: ")
-    if not campaign_name: return
+    campaign_name = input("Введите имя вчерашней рассылки для сканирования: ").strip() or last_campaign_name
+    if not campaign_name:
+        print("❌ Ошибка: имя рассылки не указано и нет предыдущей записи.")
+        return
 
     accounts_list = find_and_scan_accounts(campaign_name, "after_day_2")
     if not accounts_list:
@@ -251,6 +373,7 @@ def scan_after_next_day():
         response = requests.post(f"{SERVER_URL}/api/snapshot", headers=HEADERS, json=payload, timeout=30)
         if response.status_code == 200:
             print(f"✅ Успех! Снимок 'На следующий день' для рассылки '{campaign_name}' успешно отправлен.")
+            last_campaign_name = campaign_name
         else:
             print(f"❌ Ошибка сервера ({response.status_code}): {response.json().get('error', 'Неизвестная ошибка')}")
     except requests.exceptions.RequestException as e:
